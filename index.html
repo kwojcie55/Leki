@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator dawki leku dla dzieci</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, input, button {
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .result {
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-top: 5px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Kalkulator dawki leku dla dzieci</h1>
+    
+    <div class="form-group">
+        <label for="lek">Wybierz lek:</label>
+        <select id="lek">
+            <option value="ibum-forte">IBUM Forte</option>
+            <option value="pedicetamol">Pedicetamol</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label for="waga">Waga dziecka (kg):</label>
+        <input type="number" id="waga" step="0.1" min="0" placeholder="np. 12.5">
+    </div>
+    
+    <div class="form-group">
+        <label for="dawki">Liczba dawek na dobę:</label>
+        <input type="number" id="dawki" value="3" min="1" max="12">
+    </div>
+    
+    <button id="oblicz">Oblicz dawkę</button>
+    
+    <div id="error" class="error" style="display: none; margin-top: 10px;"></div>
+    
+    <div class="card" style="margin-top: 20px;">
+        <h3 style="margin-top: 0;">Informacje o leku</h3>
+        <div id="info-lek"></div>
+    </div>
+    
+    <div class="card">
+        <h3 style="margin-top: 0;">Wyniki</h3>
+        <div id="wynik-dobowa" class="result"></div>
+        <div id="wynik-jednorazowa" class="result"></div>
+    </div>
+    
+    <script>
+        // Definicje leków: [dawka_min_na_kg, dawka_max_na_kg, stężenie_mg_w_ml]
+        const leki = {
+            'ibum-forte': [20, 30, 200/5],  // 200mg w 5ml
+            'pedicetamol': [60, 60, 100]    // 100mg w 1ml
+        };
+        
+        // Nazwy leków do wyświetlania
+        const lekiNazwy = {
+            'ibum-forte': 'IBUM Forte',
+            'pedicetamol': 'Pedicetamol'
+        };
+        
+        // Referencje do elementów DOM
+        const lekSelect = document.getElementById('lek');
+        const wagaInput = document.getElementById('waga');
+        const dawkiInput = document.getElementById('dawki');
+        const obliczButton = document.getElementById('oblicz');
+        const infoLekDiv = document.getElementById('info-lek');
+        const wynikDobowaDiv = document.getElementById('wynik-dobowa');
+        const wynikJednorazowaDiv = document.getElementById('wynik-jednorazowa');
+        const errorDiv = document.getElementById('error');
+        
+        // Aktualizacja informacji o leku
+        function aktualizujInfoLek() {
+            const lek = lekSelect.value;
+            const [dawkaMin, dawkaMaks, stezenie] = leki[lek];
+            
+            let infoText = '';
+            if (lek === 'ibum-forte') {
+                infoText = `Dawkowanie: ${dawkaMin}-${dawkaMaks} mg/kg masy ciała na dobę<br>`;
+                infoText += `Stężenie: 200 mg w 5 ml leku`;
+            } else if (lek === 'pedicetamol') {
+                infoText = `Dawkowanie: ${dawkaMin} mg/kg masy ciała na dobę<br>`;
+                infoText += `Stężenie: 100 mg w 1 ml leku`;
+            }
+            
+            infoLekDiv.innerHTML = infoText;
+        }
+        
+        // Funkcja obliczająca dawkę
+        function obliczDawke() {
+            // Ukryj poprzedni błąd jeśli istnieje
+            errorDiv.style.display = 'none';
+            
+            // Pobierz wartości
+            const lek = lekSelect.value;
+            const wagaStr = wagaInput.value.trim();
+            const dawkiStr = dawkiInput.value.trim();
+            
+            // Walidacja
+            if (!wagaStr) {
+                pokazBlad('Wprowadź wagę dziecka');
+                return;
+            }
+            
+            if (!dawkiStr) {
+                pokazBlad('Wprowadź liczbę dawek');
+                return;
+            }
+            
+            // Konwersja na liczby
+            const waga = parseFloat(wagaStr);
+            const liczbaDawek = parseInt(dawkiStr);
+            
+            // Sprawdzenie wartości
+            if (waga <= 0) {
+                pokazBlad('Waga musi być większa od zera');
+                return;
+            }
+            
+            if (liczbaDawek <= 0) {
+                pokazBlad('Liczba dawek musi być większa od zera');
+                return;
+            }
+            
+            // Pobierz dane o leku
+            const [dawkaMin, dawkaMaks, stezenie] = leki[lek];
+            
+            // Obliczanie dobowej dawki w mg
+            const dobowaMin = dawkaMin * waga;
+            const dobowaMaks = dawkaMaks * waga;
+            
+            // Przeliczanie na ml
+            const dobowaMinMl = dobowaMin / stezenie;
+            const dobowaMaksMl = dobowaMaks / stezenie;
+            
+            // Dawka jednorazowa
+            const jednorazowaMinMl = dobowaMinMl / liczbaDawek;
+            const jednorazowaMaksMl = dobowaMaksMl / liczbaDawek;
+            
+            // Wyświetl wyniki
+            if (lek === 'ibum-forte') {
+                wynikDobowaDiv.innerHTML = `Dawka dobowa: ${dobowaMinMl.toFixed(1)}-${dobowaMaksMl.toFixed(1)} ml`;
+                wynikJednorazowaDiv.innerHTML = `Dawka jednorazowa: ${jednorazowaMinMl.toFixed(1)}-${jednorazowaMaksMl.toFixed(1)} ml`;
+            } else if (lek === 'pedicetamol') {
+                wynikDobowaDiv.innerHTML = `Dawka dobowa: ${dobowaMinMl.toFixed(1)} ml`;
+                wynikJednorazowaDiv.innerHTML = `Dawka jednorazowa: ${jednorazowaMinMl.toFixed(1)} ml`;
+            }
+        }
+        
+        // Funkcja do wyświetlania błędów
+        function pokazBlad(text) {
+            errorDiv.textContent = text;
+            errorDiv.style.display = 'block';
+            wynikDobowaDiv.innerHTML = '';
+            wynikJednorazowaDiv.innerHTML = '';
+        }
+        
+        // Obsługa zdarzeń
+        lekSelect.addEventListener('change', aktualizujInfoLek);
+        obliczButton.addEventListener('click', obliczDawke);
+        
+        // Inicjalizacja
+        aktualizujInfoLek();
+    </script>
+</body>
+</html>
