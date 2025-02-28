@@ -61,6 +61,13 @@
             color: red;
             font-weight: bold;
         }
+        .recommendation {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #e7f3ff;
+            border-radius: 4px;
+            border-left: 4px solid #4d90fe;
+        }
     </style>
 </head>
 <body>
@@ -91,6 +98,7 @@
     <div class="card" style="margin-top: 20px;">
         <h3 style="margin-top: 0;">Informacje o leku</h3>
         <div id="info-lek"></div>
+        <div id="zalecane-dawkowanie" class="recommendation"></div>
     </div>
     
     <div class="card">
@@ -100,10 +108,10 @@
     </div>
     
     <script>
-        // Definicje leków: [dawka_min_na_kg, dawka_max_na_kg, stężenie_mg_w_ml]
+        // Definicje leków: [dawka_min_na_kg, dawka_max_na_kg, stężenie_mg_w_ml, zalecana_liczba_dawek, odstęp_godzin]
         const leki = {
-            'ibum-forte': [20, 30, 200/5],  // 200mg w 5ml
-            'pedicetamol': [60, 60, 100]    // 100mg w 1ml
+            'ibum-forte': [20, 30, 200/5, 3, 8],  // 200mg w 5ml, 3 dawki co 8h
+            'pedicetamol': [60, 60, 100, 4, 6]    // 100mg w 1ml, 4 dawki co 6h
         };
         
         // Nazwy leków do wyświetlania
@@ -118,6 +126,7 @@
         const dawkiInput = document.getElementById('dawki');
         const obliczButton = document.getElementById('oblicz');
         const infoLekDiv = document.getElementById('info-lek');
+        const zalecaneDawkowanieDiv = document.getElementById('zalecane-dawkowanie');
         const wynikDobowaDiv = document.getElementById('wynik-dobowa');
         const wynikJednorazowaDiv = document.getElementById('wynik-jednorazowa');
         const errorDiv = document.getElementById('error');
@@ -125,7 +134,7 @@
         // Aktualizacja informacji o leku
         function aktualizujInfoLek() {
             const lek = lekSelect.value;
-            const [dawkaMin, dawkaMaks, stezenie] = leki[lek];
+            const [dawkaMin, dawkaMaks, stezenie, zalecaneDawki, odstepGodzin] = leki[lek];
             
             let infoText = '';
             if (lek === 'ibum-forte') {
@@ -137,6 +146,12 @@
             }
             
             infoLekDiv.innerHTML = infoText;
+            
+            // Zalecane dawkowanie
+            zalecaneDawkowanieDiv.innerHTML = `<strong>Zalecane dawkowanie:</strong> ${zalecaneDawki} dawki na dobę (co ${odstepGodzin} godzin)`;
+            
+            // Aktualizacja domyślnej liczby dawek zgodnie z zaleceniem
+            dawkiInput.value = zalecaneDawki;
         }
         
         // Funkcja obliczająca dawkę
